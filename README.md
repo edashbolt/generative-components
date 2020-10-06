@@ -2,7 +2,7 @@
 __Custom Generative Components Nodes__
 
 
-For any questions on how to use or colloborate on this project please contact me via [edashbolt@live.com](mailto:edashbolt@live.com)
+If you have any questions on how to use or colloborate on this project please contact [edashbolt@live.com](mailto:edashbolt@live.com)
 
 
 ## Summary
