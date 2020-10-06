@@ -2,7 +2,7 @@
 __Custom Generative Components Nodes__
 
 
-Refer to the wiki for more information regarding setting up your dev environment and other relevant links
+Refer to the [wiki](https://github.com/edashbolt/generative-components/wiki) for more information regarding setting up your dev environment and other relevant links
 
 
 ## Summary
