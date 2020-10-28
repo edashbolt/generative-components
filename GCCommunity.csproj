@@ -130,6 +130,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ItemTypes.cs" />
     <Compile Include="ParametricCell.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -147,6 +148,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\ImageSamplerNode.png" />
+    <Resource Include="Resources\Items.png" />
     <Resource Include="Resources\ParametricCell.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
