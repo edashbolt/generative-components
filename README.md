@@ -32,3 +32,13 @@ This node contains the following methods:
 * DropParametricCellToOrphanCell
 
   As the name suggests, this will drop a parametric cell to an orphan cell. The idea behind this workflow is that if you want to obtain the raw geometry of your parametric cell so that you can manipulate the elements downstream in your GC graph, you can use this methods output ".ElementPath" as an input for the delivered Cell.ByElement node method. Currently this tool only processes elements as curves since this was all that I needed for a job, however it would be great to update this to also produce surfaces and solids as well.
+
+### ItemTypes:
+This node contains the following methods:
+* ReadItems (currently under development, not ready for use)
+
+* WriteItems
+  * This node will update existing items attached to the input elements. 
+  * If the item does not yet exist on the input element, it will add the new item type to the elemnent/s: In order for this to work the Item Type needs to first be created in the active dgn file.
+  * This node currently only adds one new Item Type at a time (although each type can contain as many properties and values as required).
+  * Unfortunately due to the limitations of GC the property and value need to be entered as a string array. If only one property / value is required, construct the inputs as a single string array e.g. {'PropertyName'} and {'PropertyValue'}
