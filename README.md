@@ -41,4 +41,4 @@ This node contains the following methods:
   * This node will update existing items attached to the input elements. 
   * If the item does not yet exist on the input element, it will add the new item type to the elemnent/s: In order for this to work the Item Type needs to first be created in the active dgn file.
   * This node currently only adds one new Item Type at a time (although each type can contain as many properties and values as required).
-  * Unfortunately due to the limitations of GC the property and value need to be entered as a string array. If only one property / value is required, construct the inputs as a single string array e.g. {'PropertyName'} and {'PropertyValue'}
+  * Unfortunately due to the limitations of GC "replicatable" input attribute, the property and value need to be entered as a string array. If only one property / value is required, construct the inputs as a single string array e.g. {'PropertyName'} and {'PropertyValue'}
