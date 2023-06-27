@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("GCCommunity")]
-[assembly: AssemblyDescription("Open Source project started by Edward Ashbolt for the GC Community")]
+[assembly: AssemblyTitle("SampleAddIn")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("FOSS")]
-[assembly: AssemblyProduct("Custom GC Nodes")]
-[assembly: AssemblyCopyright("MIT License")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("SampleAddIn")]
+[assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("23.06.27.0")]
-[assembly: AssemblyFileVersion("23.06.27.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
