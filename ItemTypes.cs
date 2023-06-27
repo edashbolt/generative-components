@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using Bentley.GenerativeComponents;
 using Bentley.GenerativeComponents.AddInSupport;
-using Bentley.GenerativeComponents.Features;
 using Bentley.GenerativeComponents.GCScript;
 //using Bentley.GenerativeComponents.GCScript.NameScopes;
 //using Bentley.GenerativeComponents.GeneralPurpose;
@@ -15,120 +14,229 @@ using Bentley.MstnPlatformNET;
 using Bentley.DgnPlatformNET.DgnEC;
 using Bentley.ECObjects.Schema;
 using Bentley.ECObjects.Instance;
+using Bentley.GenerativeComponents.ElementBasedNodes;
+using Bentley.DgnPlatformNET.Elements;
+using Bentley.GenerativeComponents.GCScript.GCTypes;
+using Bentley.GenerativeComponents.GeneralPurpose.Collections;
+using Bentley.GenerativeComponents.GeneralPurpose;
+using Bentley.GenerativeComponents.ScriptEditor.Controls.ExpressionEditor;
+using System.Linq;
+using GCCommunity.Extensions;
 
 namespace GCCommunity
 {
     [GCNamespace("User")]
-    [NodeTypePaletteCategory("Custom")]
-    [NodeTypeIcon("Resources/Items.png")]
-    [Summary("Read, attach and update item properties on elements.")]
-
-    public class ItemTypes : Feature
+    [GCNodeTypePaletteCategory("Custom")]
+    [GCNodeTypeIcon("Resources/data-edit-outline.png")]
+    [GCSummary("Read, attach and update item properties on elements")]
+    public class ItemTypes : GeometricNode
     {
-        [DefaultTechnique]
-        [Summary("Read Items that are attached to the input elements.")]
-        [Parameter("ElementsToRead", "Input elements to read from.")]
-        [Parameter("ItemTypeName", "The Item Type.")]
+        private static readonly DgnFile _activeDgnFile = Session.Instance.GetActiveDgnFile();
+        private static ItemType _selectedItemType { get; set; }
 
-        public NodeUpdateResult ReadItems
-        (
-            NodeUpdateContext updateContext,
-            [Replicatable, DgnModelProvider] object ElementsToRead/*,
-            [Out, Replicatable] ref string[] ItemTypeName,
-            [Out, Replicatable] ref string[][] PropertyNames,
-            [Out, Replicatable] ref string[][] PropertyValues*/
-        )
-        {/*
-            try
+
+        #region Supporting Methods
+        static ExpressionEditorCustomConfiguration GetEECCForItems()
+        {
+            return new ExpressionEditorCustomConfiguration(getItemLibs);
+
+            IEnumerable<ScriptChoice> getItemLibs(ExpressionEditor parentExpressionEditor)
             {
-                DgnFile dgnFile = Session.Instance.GetActiveDgnFile();
-                DgnModel dgnModel = Session.Instance.GetActiveDgnModel();
-
-                Feature feat = (Feature)ElementsToRead;
-                long eleID = feat.Element.ID;
-                Bentley.DgnPlatformNET.Elements.Element ele = dgnModel.FindElementById(new ElementId(ref eleID));
-                
-                CustomItemHost customItemHost = new CustomItemHost(ele, false);
-
-                IList<IDgnECInstance> ecInstanceList = customItemHost.CustomItems;
-
-                List<string> types = new List<string>();
-                List<string[]> props = new List<string[]>();
-                List<string[]> values = new List<string[]>();
-
-                foreach (IDgnECInstance ecInstance in ecInstanceList)
-                {
-                    types.Add(ecInstance.ClassDefinition.Name);
-
-                    List<string> iprops = new List<string>();
-                    List<string> ivalues = new List<string>();
-
-                    IEnumerator<IECPropertyValue> ie = ecInstance.GetEnumerator(true, true);
-                    while (ie.MoveNext())
-                    {
-                        iprops.Add(ie.Current.Property.Name);
-                        ivalues.Add(ie.Current.StringValue);
-                    }
-
-                    props.Add(iprops.ToArray());
-                    values.Add(ivalues.ToArray());
-                }
-
-                PropertyNames = props.ToArray();
-                PropertyValues = values.ToArray();
+                ItemTypes node = (ItemTypes)parentExpressionEditor.MeaningOfThis;
+                ScriptChoiceList result = node.GetItemLibList();
+                return result;
             }
-            catch (Exception ex)
-            {
-                return new NodeUpdateResult.TechniqueException(ex);
-            }
-            */
-            return NodeUpdateResult.Success;
         }
 
-        [Technique]
-        [Summary("Attach an ItemTypeLibrary and/or write new values to Items on the input elements.")]
-        [Parameter("Elements", "Input elements to write to.")]
-        public NodeUpdateResult WriteItems
+        ScriptChoiceList GetItemLibList()
+        {
+            IList<ItemTypeLibrary> itemLibs = ItemTypeLibrary.PopulateListFromFile(_activeDgnFile);
+
+            ScriptChoiceList libList = new ScriptChoiceList();
+            for (int i = 0; i < itemLibs.Count; i++)
+            {
+                ScriptChoice itemList = new ScriptChoice(itemLibs[i].DisplayLabel);
+                foreach (ItemType itemType in itemLibs[i].ItemTypes)
+                {
+                    itemList.AddSubChoice(itemType.ItemNamesConcat().ToQuotedScriptText());
+                }
+                libList.Add(itemList);
+            }
+
+            return libList;
+        }
+        #endregion
+
+
+
+
+        [GCDefaultTechnique]
+        [GCSummary("Select an ItemType from the active design file to read property information")]
+        [GCParameter("ItemType", "The ItemType to read from (must be imported in the active design file)")]
+        public NodeUpdateResult GetItemTypeInfo
         (
             NodeUpdateContext updateContext,
-            [DgnModelProvider, Replicatable] object ElementsToWriteTo,
-            [Replicatable] string ItemTypeLibraryName,
-            [Replicatable] string ItemTypeName,
-            [Replicatable(-1, true)] string[] PropertyName,
-            [Replicatable(-1, true)] string[] PropertyValue
+            [GCExpressionEditorCustomConfiguration(nameof(GetEECCForItems))] string ItemType,
+            [GCOut, GCInitiallyPinned] ref string ItemTypeName,
+            [GCOut, GCInitiallyPinned] ref string[] ItemTypeProperties
         )
         {
             try
             {
-                DgnFile dgnFile = Session.Instance.GetActiveDgnFile();
-                DgnModel dgnModel = Session.Instance.GetActiveDgnModel();
-
-                Feature feat = (Feature)ElementsToWriteTo;
-                long eleID = feat.Element.ID;
-                Bentley.DgnPlatformNET.Elements.Element ele = dgnModel.FindElementById(new ElementId(ref eleID));
-
-                
-                ItemTypeLibrary itl = ItemTypeLibrary.FindByName(ItemTypeLibraryName, dgnFile);
-                ItemType itemType = itl.GetItemTypeByName(ItemTypeName);
-
-                CustomItemHost customItemHost = new CustomItemHost(ele, false);
-
-                IDgnECInstance ecInstance = customItemHost.GetCustomItem(ItemTypeLibraryName, ItemTypeName);
-                if (ecInstance == null)
+                if (string.IsNullOrEmpty(ItemType))
                 {
-                    ecInstance = customItemHost.ApplyCustomItem(itemType);
+                    ItemTypeProperties.Clear();
                 }
-                for(int i = 0; i < PropertyName.Length; i++)
+                else
                 {
-                    ecInstance.SetString(PropertyName[i].ToString(), PropertyValue[i].ToString());   
+                    //Get item type
+                    _selectedItemType = ItemType.GetItemTypeByConcatString();
+
+                    //Add item properties to output
+                    List<string> propList = new List<string>();
+                    IEnumerator<CustomProperty> properties = _selectedItemType.GetEnumerator();
+                    while (properties.MoveNext())
+                    {
+                        CustomProperty prop = properties.Current;
+                        propList.Add(prop.DisplayLabel);
+                    }
+                    if (propList.Any())
+                        ItemTypeProperties = propList.ToArray();
+                    else
+                        ItemTypeProperties = null;
+
+                    //Pass selected item type to output
+                    ItemTypeName = ItemType;
                 }
-                ecInstance.WriteChanges();
             }
             catch (Exception ex)
             {
                 return new NodeUpdateResult.TechniqueException(ex);
             }
-                        
+            return NodeUpdateResult.Success;
+        }
+
+        [GCTechnique]
+        [GCSummary("Read the Item Type properties attached to elements")]
+        [GCParameter("ElementsToRead", "Input elements to read custom item type data from")]
+        [GCParameter("ItemTypeName", "The concatenated library and item type name")]
+        public NodeUpdateResult ReadItems
+        (
+            NodeUpdateContext updateContext,
+            [GCDgnModelProvider, GCReplicatable] GeometricNode ElementsToRead,
+            [GCIn] string ItemTypeName,
+            [GCOut, GCReplicatable, GCInitiallyPinned] ref IGCObject[] ItemProperties
+        )
+        {
+            if (string.IsNullOrEmpty(ItemTypeName))
+                return new NodeUpdateResult.IncompleteInputs(ItemTypeName);
+
+            Boxer boxer = GCEnvironment().Boxer;
+            
+            try
+            {
+                //Update ItemType selection if required
+                if (this.ReplicationIndex < 1)
+                {
+                    //Clear previous values
+                    this.ClearReplicatedChildNodes();
+
+                    //Update selected item if not matching input
+                    if (_selectedItemType == null || _selectedItemType.ItemNamesConcat() != ItemTypeName)
+                        _selectedItemType = ItemTypeName.GetItemTypeByConcatString();
+                }                
+
+                //Get platformNET element
+                long id = ElementsToRead.GCElement().ElementId();
+                Element element = ElementsToRead.DgnModel().FindElementById(new ElementId(ref id));
+
+                //Get custom item properties
+                CustomItemHost customItemHost = new CustomItemHost(element, false);
+                IDgnECInstance ecInstance = customItemHost.GetCustomItem(_selectedItemType.Library.DisplayLabel, _selectedItemType.DisplayLabel);
+                if (ecInstance == null)
+                    throw new Exception($"Item not found on element");
+
+                List<IGCObject> values = new List<IGCObject>();
+                IEnumerator<IECPropertyValue> ie = ecInstance.GetEnumerator(true, true);
+                while (ie.MoveNext())
+                {
+                    if (ie.Current.IsNull)
+                        continue;
+
+                    //values.Add(ie.Current.NativeValue);
+                    if (boxer.TryBox(out IGCObject result, ie.Current.NativeValue))
+                        values.Add(result);
+                    else
+                        throw new Exception($"Error boxing value '{ie.Current.NativeValue}' for item property '{ie.Current.AccessString}'");
+                }
+
+                ItemProperties = values.ToArray();
+                //this.AddOrSetOutputOnlyAdHocProperty("props", values, isInitiallyPinned: true, description: Ls.Literal("The item type property values"));
+            }
+            catch (Exception ex)
+            {
+                return new NodeUpdateResult.TechniqueException(ex);
+            }
+            return NodeUpdateResult.Success;
+        }
+
+
+        [GCTechnique]
+        [GCSummary("Attach an ItemTypeLibrary and/or write new values to Items on the input elements")]
+        [GCParameter("ElementsToWriteTo", "Input elements to write the custom item type data to")]
+        [GCParameter("ItemTypeName", "The concatenated library and item type name")]
+        public NodeUpdateResult WriteItems
+        (
+            NodeUpdateContext updateContext,
+            [GCDgnModelProvider, GCReplicatable] GeometricNode ElementsToWriteTo,
+            [GCIn] string ItemTypeName,
+            [GCIn] IGCObject[] Properties,
+            [GCIn] IGCObject[] Values
+        )
+        {
+            try
+            {
+                //Update ItemType selection if required
+                if (this.ReplicationIndex < 1)
+                {
+                    //Update selected item if not matching input
+                    if (_selectedItemType == null || _selectedItemType.ItemNamesConcat() != ItemTypeName)
+                        _selectedItemType = ItemTypeName.GetItemTypeByConcatString();
+                }
+
+                if (ItemTypeName.ItemNamesSplitLib(out string libName, out string itemName))
+                {
+                    DgnModel dgnModel = Session.Instance.GetActiveDgnModel();
+
+                    long id = ElementsToWriteTo.GCElement().ElementId();
+                    Element element = dgnModel.FindElementById(new ElementId(ref id)).Clone();
+                    this.SetElement(element);
+                    
+                    CustomItemHost customItemHost = new CustomItemHost(element, false);
+
+                    IDgnECInstance ecInstance = customItemHost.GetCustomItem(libName, itemName);
+                    if (ecInstance == null)
+                    {
+                        ecInstance = customItemHost.ApplyCustomItem(_selectedItemType);
+                    }
+                    for (int i = 0; i < Properties.Length; i++)
+                    {
+                        string propName = Properties[i].Unbox<string>();
+                        object propValue = Values[i].Unbox<object>();
+                        //bool getName = Bentley.ECObjects.Schema.ECNameValidation.EncodeToValidName(ref propName);
+                        ecInstance.SetAsString(propName, propValue.ToString());
+                    }
+                    
+                    ecInstance.WriteChanges();
+                }
+                else
+                    return new NodeUpdateResult.TechniqueInvalidArguments(ItemTypeName);
+            }
+            catch (Exception ex)
+            {
+                return new NodeUpdateResult.TechniqueException(ex);
+            }
+
             return NodeUpdateResult.Success;
         }
     }
