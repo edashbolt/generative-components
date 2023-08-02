@@ -23,6 +23,9 @@ using Bentley.GenerativeComponents.ScriptEditor.Controls.ExpressionEditor;
 using Bentley.EC.Persistence.Query;
 using System.Windows.Controls;
 using System.Linq;
+using Bentley.GenerativeComponents.ElementBasedNodes.Specific;
+using Bentley.GeometryNET;
+using Bentley.GenerativeComponents.MicroStation;
 
 namespace GCCommunity
 {
@@ -30,22 +33,74 @@ namespace GCCommunity
     [GCNodeTypePaletteCategory("Custom")]
     public class Test : ElementBasedNode
     {
-        
+
         [GCDefaultTechnique]
         public NodeUpdateResult Default
         (
             NodeUpdateContext updateContext,
-            [GCIn] ref string Property
+            [GCOut] ref LineNode line
         )
         {
             try
             {
-                
+                line = CreateConstituentNode<LineNode>(this, "line", true);
+                line.ByDPoint3d(new Bentley.GeometryNET.DPoint3d(0, 0, 0), new Bentley.GeometryNET.DPoint3d(10000, 10000, 0));
+                line.LatestUpdateResult = NodeUpdateResult.Success;
             }
             catch (Exception ex)
             {
                 return new NodeUpdateResult.TechniqueException(ex);
             }
+            return NodeUpdateResult.Success;
+        }
+
+
+        [GCTechnique]
+        public NodeUpdateResult SetLineElement
+        (
+            NodeUpdateContext updateContext,
+            [GCOut] ref LineNode line
+        )
+        {
+            try
+            {
+                line = CreateConstituentNode<LineNode>(this, "line", true);
+                LineElement lineEle = new LineElement(Session.Instance.GetActiveDgnModel(), null, new Bentley.GeometryNET.DSegment3d(new Bentley.GeometryNET.DPoint3d(0, 0, 0), new Bentley.GeometryNET.DPoint3d(10000, 10000, 0)));
+                line.SetElement(lineEle);
+                line.LatestUpdateResult = NodeUpdateResult.Success;
+            }
+            catch (Exception ex)
+            {
+                return new NodeUpdateResult.TechniqueException(ex);
+            }
+            return NodeUpdateResult.Success;
+        }
+
+        [GCTechnique]
+        [GCSummary("Creates a line between a given start and end point, or a list of lines between lists of start points and/or end points.")]
+        [GCParameter("StartPoint", "Start point of the line.")]
+        [GCParameter("EndPoint", "End point of the line.")]
+        public NodeUpdateResult ByPoints
+        (
+            NodeUpdateContext updateContext,
+            [GCDgnModelProvider, GCReplicatable] IPointNode StartPoint,
+            [GCReplicatable] IPointNode EndPoint,
+            [GCOut] ref double Length
+        )
+        {
+            DPoint3d startPt = StartPoint.GetDPoint3d();
+            DPoint3d endPt = EndPoint.GetDPoint3d();
+
+            DPoint3d uorStartPt = NativeDgnTools.FromMUToUOR(startPt);
+            DPoint3d uorEndPt = NativeDgnTools.FromMUToUOR(endPt);
+
+            LineElement lineElement = new LineElement(GCDgnModel().DgnModel(), TemplateElement(),
+                                                      new DSegment3d(uorStartPt, uorEndPt));
+
+            SetElement(lineElement);
+            
+            Length = startPt.Distance(endPt);
+
             return NodeUpdateResult.Success;
         }
     }

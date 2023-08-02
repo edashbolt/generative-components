@@ -20,7 +20,7 @@ namespace GCCommunity.Utils
 
         public IList<ElementGraphics> output = new List<ElementGraphics>();
 
-        public GraphicsProcessor(bool addToModel = true)
+        public GraphicsProcessor(bool addToModel = false)
         {
             AnnounceTransform(DTransform3d.Identity);
             _addToModel = addToModel;

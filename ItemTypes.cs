@@ -125,7 +125,7 @@ namespace GCCommunity
             NodeUpdateContext updateContext,
             [GCDgnModelProvider, GCReplicatable] GeometricNode ElementsToRead,
             [GCIn] string ItemTypeName,
-            [GCOut, GCReplicatable, GCInitiallyPinned] ref IGCObject[] ItemProperties
+            [GCOut, GCReplicatable, GCInitiallyPinned] ref IGCObject[] ItemValues
         )
         {
             if (string.IsNullOrEmpty(ItemTypeName))
@@ -144,7 +144,7 @@ namespace GCCommunity
                     //Update selected item if not matching input
                     if (_selectedItemType == null || _selectedItemType.ItemNamesConcat() != ItemTypeName)
                         _selectedItemType = ItemTypeName.GetItemTypeByConcatString();
-                }                
+                }
 
                 //Get platformNET element
                 long id = ElementsToRead.GCElement().ElementId();
@@ -170,7 +170,7 @@ namespace GCCommunity
                         throw new Exception($"Error boxing value '{ie.Current.NativeValue}' for item property '{ie.Current.AccessString}'");
                 }
 
-                ItemProperties = values.ToArray();
+                ItemValues = values.ToArray();
                 //this.AddOrSetOutputOnlyAdHocProperty("props", values, isInitiallyPinned: true, description: Ls.Literal("The item type property values"));
             }
             catch (Exception ex)
@@ -190,8 +190,8 @@ namespace GCCommunity
             NodeUpdateContext updateContext,
             [GCDgnModelProvider, GCReplicatable] GeometricNode ElementsToWriteTo,
             [GCIn] string ItemTypeName,
-            [GCIn] IGCObject[] Properties,
-            [GCIn] IGCObject[] Values
+            [GCIn, GCReplicatable(true)] IGCObject[] Properties,
+            [GCIn, GCReplicatable(true)] IGCObject[] Values
         )
         {
             try
@@ -199,6 +199,10 @@ namespace GCCommunity
                 //Update ItemType selection if required
                 if (this.ReplicationIndex < 1)
                 {
+                    //Clear previous values
+                    this.ClearReplicatedChildNodes();
+                    this.ParentNode.DeleteAllSubNodes(updateContext, true);
+
                     //Update selected item if not matching input
                     if (_selectedItemType == null || _selectedItemType.ItemNamesConcat() != ItemTypeName)
                         _selectedItemType = ItemTypeName.GetItemTypeByConcatString();

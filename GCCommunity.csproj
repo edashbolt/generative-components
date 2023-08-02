@@ -147,13 +147,14 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bake.cs" />
+    <Compile Include="Export.cs" />
     <Compile Include="Extensions\ElementExtensions.cs" />
     <Compile Include="Extensions\ItemTypeExtensions.cs" />
     <Compile Include="Import.cs" />
     <Compile Include="Objects\ElementGraphics.cs" />
+    <Compile Include="ParametricCellExtended.cs" />
     <Compile Include="ParametricCellUtils.cs" />
-    <None Include="Test.cs" />
+    <Compile Include="Test.cs" />
     <Compile Include="ItemTypes.cs" />
     <Compile Include="Utils\Selection.cs" />
     <Compile Include="Utils\GraphicsProcessor.cs" />

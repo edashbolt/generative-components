@@ -26,7 +26,7 @@ namespace GCCommunity
     [GCNodeTypeIcon("Resources/import.png")]
     [GCSummary("Import MicroStation Elements into GC")]
 
-    public class Import : GeometricNode
+    public class Import : ElementBasedNode
     {
         [GCDefaultTechnique]
         [GCSummary("Import MicroStation geometry as GC Elements")]
@@ -50,6 +50,7 @@ namespace GCCommunity
                 if (this.ReplicationIndex < 1)
                 {
                     this.ClearReplicatedChildNodes();
+                    this.ParentNode.DeleteAllSubNodes(updateContext, true);
                 }
 
                 //Instantiate variables
@@ -85,5 +86,64 @@ namespace GCCommunity
                 return new NodeUpdateResult.TechniqueException(ex);
             }
         }
+        /*
+        [GCTechnique]
+        [GCSummary("Import MicroStation geometry as GC Elements")]
+        [GCParameter("ElementPaths", "The display path for the selected elements, to be consumed by GC nodes using the 'ByElement' technique")]
+        public NodeUpdateResult ImportLines
+        (
+            NodeUpdateContext updateContext,
+            [GCOut, GCInitiallyPinned, GCSingularOrPlural] ref IPoly ElementPaths
+        )
+        {
+            try
+            {
+                //Get selected elements
+                List<Element> selectedElements = Utils.Selection.GetSelectedElements();
+
+                //If none selected return
+                if (!selectedElements.Any())
+                    return new NodeUpdateResult.SuccessButWithWarning(Ls.Literal("No elements selected"));
+
+                //Clear previous values
+                if (this.ReplicationIndex < 1)
+                {
+                    this.ParentNode.DeleteAllSubNodes(updateContext, true);
+                }
+
+                //Instantiate variables
+                List<IGCObject> importedElementPaths = new List<IGCObject>();
+                List<Element> importedElements = new List<Element>();
+
+                DgnModel model = Session.Instance.GetActiveDgnModel();
+                Boxer boxer = GCEnvironment().Boxer;
+
+                foreach (Element element in selectedElements)
+                {
+                    try
+                    {
+                        Element clone = element.Clone();
+                        if (clone != null && clone.IsPersistent && NativeDgnTools.TryGetPersistentPathOfElement(out string persistentPath, clone))
+                        {
+                            importedElementPaths.Add(boxer.Box(persistentPath));
+                            importedElements.Add(clone);
+                        }
+                    }
+                    catch { }
+                }
+
+                //Set outputs
+                ElementPaths = importedElementPaths.ToArray();
+                this.SetElements(importedElements);
+                this.SetUpdateDeferral(NodeUpdateDeferralOption.UntilUpdateAll);
+
+                return NodeUpdateResult.Success;
+            }
+            catch (Exception ex)
+            {
+                return new NodeUpdateResult.TechniqueException(ex);
+            }
+        }
+        */
     }
 }
