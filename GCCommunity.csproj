@@ -156,6 +156,7 @@
     <Compile Include="ParametricCellUtils.cs" />
     <Compile Include="Test.cs" />
     <Compile Include="ItemTypes.cs" />
+    <Compile Include="Utils\ExportUtils.cs" />
     <Compile Include="Utils\Selection.cs" />
     <Compile Include="Utils\GraphicsProcessor.cs" />
     <None Include="Obsolete\ParametricCell.cs" />

@@ -1,4 +1,5 @@
 ﻿using Bentley.DgnPlatformNET.Elements;
+using Bentley.ECObjects.Schema;
 using Bentley.GenerativeComponents;
 using Bentley.GenerativeComponents.AddInSupport;
 using Bentley.GenerativeComponents.DgnPlatformGC;
@@ -6,8 +7,11 @@ using Bentley.GenerativeComponents.ElementBasedNodes;
 using Bentley.GenerativeComponents.GCScript;
 using Bentley.GenerativeComponents.GeneralPurpose;
 using Bentley.GenerativeComponents.GeneralPurpose.Atomic;
+using Bentley.GenerativeComponents.MicroStation;
 using Bentley.GenerativeComponents.ScriptEditor;
 using Bentley.GenerativeComponents.View;
+using Bentley.Interop.MicroStationDGN;
+using GCCommunity.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -95,7 +99,7 @@ namespace GCCommunity
         }
         */
 
-        [GCTechnique]
+        [GCDefaultTechnique]
         [GCSummary("Copies the input geometry nodes into the active model, removing GC control over the elements.")]
         [GCParameter("GeometryToBake", "Input geometry to bake into the active model")]
         public NodeUpdateResult BakeElementsIntoActiveModel
@@ -111,8 +115,32 @@ namespace GCCommunity
                 {
                     foreach (GeometricNode node in GeometryToBake)
                     {
-                        if (!node.Export(this.GCDgnModel(), isExternalDesignFile: false, null))
-                            throw new Exception($"Failed to bake elements for node '{node.Name}'");
+                        if(node.IsSound())
+                        {
+                            //Get all gcElements in node and subnodes
+                            List<GCElement> gcElements = new List<GCElement>();
+                            gcElements.AddRange(node.GCElements());
+                            foreach (ElementBasedNode subNode in node.SubNodesForExport())
+                                gcElements.AddRange(subNode.GCElements());
+
+                            //Process elements
+                            foreach (GCElement gcElement in gcElements)
+                            {
+                                GCElement clonedGCElement = gcElement.CloneGCElement();
+                                if (clonedGCElement.IsHoldingElement)
+                                    NativeDgnTools.RemoveSelfDependLinkFromElement(clonedGCElement.Element());
+                                else
+                                    NativeDgnTools.RemoveSelfDependLinkFromComElement(clonedGCElement.ComElement());
+                                /*
+                                if (overridingSymbology.HasValue)
+                                {
+                                    element.ApplyGCSymbology(this, overridingSymbology.Value);
+                                }
+                                */
+
+                                ExportUtils.SaveGCElementToDgnModel(clonedGCElement, this.GCDgnModel(), false);
+                            }                           
+                        }                        
                     }
                 }
                 return NodeUpdateResult.Success;
